@@ -5,18 +5,14 @@ const multer = require('multer')
 const app = express();
 
 app.use(cors());
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 //Base de datos 
+require('./bbdd.js');
 const Pool = require('pg').Pool
-const pool = new Pool({
-    user: 'empleomap_rafacuest',
-    host: 'postgresql-empleomap.alwaysdata.net',
-    database: 'empleomap_motos',
-    password: 'requetequete',
-    port: 5432
-});
+const pool = new Pool(ddbbConfig);
 
 const getTest = (request, response) => {
     response.send('Hola test')
