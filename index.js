@@ -79,7 +79,7 @@ var guardarImg = multer.diskStorage({
 app.post('/moto/foto', cors(), function (req, res) {
     var upload = multer({ storage: guardarImg }).single('foto');
 
-    upload(req, res, function (err) {
+    upload(req, res, cors(), function (err) {
         let { marca, modelo, year, foto, precio } = req.body;
         foto = FOTO_URL+"/"+fileName;
         pool.query('INSERT INTO motos (marca,modelo,year,foto,precio) VALUES ($1,$2,$3,$4,$5)', [marca, modelo, year, foto, precio], (error, results) => {
@@ -137,7 +137,6 @@ const fillMotos = (request, response) => {
         }
         response.status(201).send('Un monton de motos han sido añadidas');
     });
-
 }
 app.get('/fillMotos', fillMotos);
 
