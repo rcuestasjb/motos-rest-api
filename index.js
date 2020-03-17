@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const multer = require('multer')
 const app = express();
 
 app.use(cors());
@@ -49,51 +48,64 @@ app.post('/moto', addMoto);
 
 const deleteMoto = (request, response) => {
     const id = parseInt(request.params.id);
+    //1) Borrar la imagen si existe
+    pool.query('SELECT foto FROM motos WHERE id = $1', [id], (error, results) => {
+        if (error) {
+            response.status(404).send("no existe");
+            throw error
+        }
+        if ( results.rowCount == 1 ) {
+            let fotoUrl = results.rows[0].foto;
+            let url = require("url");
+            let path = require("path");
+            let parsed = url.parse(fotoUrl);
+            //console.log(path.basename(parsed.pathname));
+            let nombreFichero = path.basename(parsed.pathname);
+            response.status(200).send()
+            var fs = require('fs');
+            var filePath = "./fotos/"+nombreFichero; 
+            fs.unlinkSync(filePath);
+        }
+        response.status(200).send("no existe");
+    })
+
     pool.query('DELETE FROM motos WHERE id = $1', [id], (error, results) => {
         if (error) {
             throw error
         }
-        response.status(200).send(`User deleted with ID: ${id}`)
+        response.status(200).send(`Moto deleted ID: ${id}`)
     })
 }
 app.delete('/moto/:id', cors(), deleteMoto);
 
-var fs = require('fs');
+var multer = require('multer');
 var fileName;
-var guardarImg = multer.diskStorage({
-    destination: function (req, file, callback) {
-        fs.mkdir(FOTO_PATH, function (err) {
-            if (err) {
-                callback(null, FOTO_PATH);
-            } else {
-                callback(null, FOTO_PATH);
-            }
-        })
+var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './fotos');
     },
-    filename: function (req, file, callback) {
+    filename: function (req, file, cb) {
         fileName = Date.now() + "_" + file.originalname;
-        callback(null, Date.now() + "_" + file.originalname);
+        cb(null, fileName);
     }
-});
-
-app.post('/moto/foto', cors(), function (req, res) {
-    var upload = multer({ storage: guardarImg }).single('foto');
-
-    upload(req, res, cors(), function (err) {
+})
+var upload = multer({ storage: storage })
+app.post('/moto/foto', cors(), upload.single('foto'), (req, res) => {
+    res.header('hola', '1');
+    try {
         let { marca, modelo, year, foto, precio } = req.body;
-        foto = FOTO_URL+"/"+fileName;
+        foto = FOTO_URL + "/" + fileName;
         pool.query('INSERT INTO motos (marca,modelo,year,foto,precio) VALUES ($1,$2,$3,$4,$5)', [marca, modelo, year, foto, precio], (error, results) => {
             if (error) {
                 throw error
             }
             res.status(201).send(`Una nueva moto a sido añadida `)
         });
-        if (err) {
-            return res.end("Error uploading file.");
-        }
-    });
+    } catch (err) {
+        res.send(400);
+    }
 });
-app.delete('/moto/:id', cors(), deleteMoto);
+
 const fillMotos = (request, response) => {
     pool.query(`
         INSERT INTO motos (marca,modelo,year,foto,precio) VALUES 
@@ -140,7 +152,6 @@ const fillMotos = (request, response) => {
 }
 app.get('/fillMotos', fillMotos);
 
-
 const PORT = process.env.ALWAYSDATA_HTTPD_PORT || 3000;
 const IP = process.env.ALWAYSDATA_HTTPD_IP || null;
 
@@ -158,3 +169,5 @@ app.use('/imgs', express.static('fotos'));     //esto es para servir los archos 
 app.listen(PORT, IP, () => {
     console.log("El servidor está inicializado en el puerto " + PORT);
 });
+
+
