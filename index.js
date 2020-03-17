@@ -51,7 +51,7 @@ const deleteMoto = (request, response) => {
     //1) Borrar la imagen si existe
     pool.query('SELECT foto FROM motos WHERE id = $1', [id], (error, results) => {
         if (error) {
-            response.status(404).send("no existe");
+             // response.status(404).send("no existe");
             throw error
         }
         if ( results.rowCount == 1 ) {
@@ -59,14 +59,17 @@ const deleteMoto = (request, response) => {
             let url = require("url");
             let path = require("path");
             let parsed = url.parse(fotoUrl);
-            //console.log(path.basename(parsed.pathname));
             let nombreFichero = path.basename(parsed.pathname);
-            response.status(200).send()
             var fs = require('fs');
-            var filePath = "./fotos/"+nombreFichero; 
-            fs.unlinkSync(filePath);
+            var filePath = FOTO_PATH+nombreFichero; 
+            console.log(filePath);
+            try {
+                fs.unlinkSync(filePath);
+            } 
+            catch(err){
+                console.error("El fichero no se a podifo borrar"+err)
+            }
         }
-        response.status(200).send("no existe");
     })
 
     pool.query('DELETE FROM motos WHERE id = $1', [id], (error, results) => {
@@ -156,12 +159,12 @@ const PORT = process.env.ALWAYSDATA_HTTPD_PORT || 3000;
 const IP = process.env.ALWAYSDATA_HTTPD_IP || null;
 
 if (PORT != 3000) {
-    FOTO_PATH = '/home/empleomap/m7/moto_rest/fotos';
+    FOTO_PATH = '/home/empleomap/m7/moto_rest/fotos/';
     FOTO_URL = 'http://motos.puigverd.org/imgs/';
 }
 else {
-    FOTO_PATH = 'C:\\Users\\rafa\\Desktop\\ionic\\motos-rest-api\\fotos';
-    FOTO_URL = "http://localhost:3000/imgs";
+    FOTO_PATH = 'C:\\Users\\rafa\\Desktop\\ionic\\motos-rest-api\\fotos\\';
+    FOTO_URL = "http://localhost:3000/imgs/";
 }
 
 app.use('/imgs', express.static('fotos'));     //esto es para servir los archos estaticos 
@@ -169,5 +172,3 @@ app.use('/imgs', express.static('fotos'));     //esto es para servir los archos 
 app.listen(PORT, IP, () => {
     console.log("El servidor está inicializado en el puerto " + PORT);
 });
-
-
